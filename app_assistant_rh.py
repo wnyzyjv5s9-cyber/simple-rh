@@ -1,8 +1,12 @@
 import streamlit as st
 
-NOM_APPLICATION = "Assistant RH PME"
+# ==============================================================================
+# CONFIGURATION COMMERCIALE - PILOTE RH
+# ==============================================================================
+NOM_APPLICATION = "Pilote RH"
 LIEN_PAIEMENT_STRIPE = "https://stripe.com"
 
+# Base de données des abonnés officiels (Identifiant: {Nom, Mot de passe, Statut})
 BASE_DONNEES_CLIENTS = {
     "dirigeant1": {"nom": "Société Alpha", "pass": "alpha2026", "statut": "Actif"},
     "patron2": {"nom": "Boulangerie Louise", "pass": "louise2026", "statut": "Actif"},
@@ -11,10 +15,50 @@ BASE_DONNEES_CLIENTS = {
 
 st.set_page_config(page_title=NOM_APPLICATION, page_icon="💼", layout="wide")
 
+# Gestion de l'état de la page (Connexion, Inscription ou Application)
 if "authentifie" not in st.session_state:
     st.session_state["authentifie"] = False
     st.session_state["client_id"] = None
+if "page_inscription" not in st.session_state:
+    st.session_state["page_inscription"] = False
 
+# ==============================================================================
+# ÉCRAN 1 : FORMULAIRE D'INSCRIPTION AUTOMATIQUE
+# ==============================================================================
+if st.session_state["page_inscription"]:
+    st.title(f"🚀 Rejoindre {NOM_APPLICATION}")
+    st.subheader("Activez votre outil RH en moins de 2 minutes")
+    
+    with st.form("form_inscription"):
+        nom_complet = st.text_input("Votre Prénom et Nom *")
+        nom_pme = st.text_input("Nom de votre Entreprise *")
+        email_pro = st.text_input("Adresse Email professionnelle *")
+        tel_pro = st.text_input("Numéro de Téléphone *")
+        
+        formule = st.radio(
+            "Choisissez votre formule d'abonnement :",
+            ["Abonnement Mensuel - 49 € HT / mois (Sans engagement)", "Abonnement Annuel - 390 € HT / an (2 mois GRATUITS)"]
+        )
+        
+        bouton_valider = st.form_submit_button("Valider ma demande d'accès", use_container_width=True)
+        
+        if bouton_valider:
+            if nom_complet and nom_pme and email_pro and tel_pro:
+                st.success(f"🎉 Merci {nom_complet} ! Votre demande d'inscription pour {nom_pme} a bien été enregistrée.")
+                st.info("💳 ÉTAPE FINALE : Pour activer immédiatement vos accès, veuillez procéder au règlement sécurisé.")
+                st.markdown(f"[➡️ CLIQUEZ ICI POUR PAYER VOTRE ABONNEMENT SUR STRIPE]({LIEN_PAIEMENT_STRIPE})")
+                st.caption("Une fois le paiement validé, notre équipe vous enverra vos codes d'accès par SMS et Email sous 10 minutes.")
+            else:
+                st.error("❌ Veuillez remplir tous les champs obligatoires (marqués d'une *).")
+                
+    if st.button("⬅️ Retour à l'écran de connexion"):
+        st.session_state["page_inscription"] = False
+        st.rerun()
+    st.stop()
+
+# ==============================================================================
+# ÉCRAN 2 : INTERFACE DE CONNEXION SÉCURISÉE
+# ==============================================================================
 if not st.session_state["authentifie"]:
     st.title(f"🔑 Connexion - {NOM_APPLICATION}")
     st.subheader("Espace Client Entreprise")
@@ -31,12 +75,21 @@ if not st.session_state["authentifie"]:
                 st.success(f"Bienvenue, {client_infos['nom']} !")
                 st.rerun()
             else:
-                st.error("❌ Votre abonnement est actuellement suspendu. Veuillez régulariser votre situation.")
+                st.error("❌ Votre abonnement est suspendu. Veuillez régulariser votre situation.")
                 st.markdown(f"[🔗 Débloquer mon compte et régulariser sur Stripe]({LIEN_PAIEMENT_STRIPE})")
         else:
             st.error("Identifiant ou mot de passe incorrect.")
+            
+    st.markdown("---")
+    st.write(" Vous êtes un nouveau client ?")
+    if st.button("Créer un compte et s'abonner à Pilote RH", type="primary"):
+        st.session_state["page_inscription"] = True
+        st.rerun()
     st.stop()
 
+# ==============================================================================
+# ÉCRAN 3 : INTERFACE CONSEIL RH (CONNEXION RÉUSSIE)
+# ==============================================================================
 client_id = st.session_state["client_id"]
 nom_entreprise = BASE_DONNEES_CLIENTS[client_id]["nom"]
 
@@ -60,6 +113,7 @@ if st.sidebar.button("Se déconnecter"):
     st.session_state["client_id"] = None
     st.rerun()
 
+# --- MODULE 1 : TABLEAU DE BORD ---
 if menu == "Tableau de bord & Seuils":
     st.header("📊 Tableau de Bord & Obligations Légales")
     effectif = st.number_input("Indiquez l'effectif actuel de votre entreprise (ETP) :", min_value=1, value=5)
@@ -73,6 +127,7 @@ if menu == "Tableau de bord & Seuils":
     else:
         st.info("💡 **Seuil 11 salariés :** Prochaine étape critique pour la mise en place du CSE.")
 
+# --- MODULE 2 : COÛT D'EMBAUCHE ---
 elif menu == "Simulateur de Coût d'Embauche":
     st.header("🧮 Simulateur de Coût d'Embauche Simplifié")
     salaire_brut = st.number_input("Salaire mensuel Brut proposé (€) :", min_value=0, value=2200)
@@ -87,6 +142,7 @@ elif menu == "Simulateur de Coût d'Embauche":
     with col2:
         st.metric("COÛT TOTAL MENSUEL ESTIME", f"{cout_total_mensuel:,.2f} €")
 
+# --- MODULE 3 : CONGÉS ---
 elif menu == "Suivi des Congés & Absences":
     st.header("📅 Simulateur de Solde de Congés Payés")
     acquis = st.number_input("Jours acquis :", min_value=0.0, value=25.0, step=0.5)
@@ -97,6 +153,7 @@ elif menu == "Suivi des Congés & Absences":
     else:
         st.success(f"✅ Demande validable. Solde restant : {solde} jours.")
 
+# --- MODULE 4 : ENTRETIEN ANNUEL ---
 elif menu == "Trame d'Entretien Annuel":
     st.header("📝 Générateur de Trame d'Entretien Annuel d'Évaluation")
     nom_salarie = st.text_input("Nom & Prénom du Salarié :", "Jean Dupont")
@@ -107,6 +164,7 @@ elif menu == "Trame d'Entretien Annuel":
     texte_entretien = f"ENTRETIEN ANNUEL\nEntreprise: {nom_entreprise}\nSalarie: {nom_salarie}\nPoste: {poste}\nReussites: {reussites}\nObjectifs: {objectifs}"
     st.download_button(label="📥 Télécharger (.txt)", data=texte_entretien, file_name=f"Entretien_{nom_salarie}.txt")
 
+# --- MODULE 5 : ENTRETIEN PRO ---
 elif menu == "Entretien Professionnel (2 ans)":
     st.header("📋 Générateur d'Entretien Professionnel Obligatoire")
     nom_salarie_pro = st.text_input("Nom & Prénom du Salarié :", "Marie Martin")
