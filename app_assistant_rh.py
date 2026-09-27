@@ -4,7 +4,7 @@ import streamlit as st
 # CONFIGURATION COMMERCIALE - PILOTE RH
 # ==============================================================================
 NOM_APPLICATION = "Pilote RH"
-LIEN_PAIEMENT_STRIPE = "https://stripe.com"
+LIEN_PAIEMENT_STRIPE = "https://buy.stripe.com/fZu5kE8ZWfYw1ll1FFe7m00"
 
 # Base de données des abonnés officiels (Identifiant: {Nom, Mot de passe, Statut})
 BASE_DONNEES_CLIENTS = {
